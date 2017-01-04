@@ -22,20 +22,20 @@
 #'   \item extract$time - the times of the extracts
 #'   }
 #' @examples
-#' xpos <- c(230, 240)
-#' ypos <- c(40, 45)
-#' tpos <- c('2006-05-05', '2006-06-21')
-#' extract <- xtracto_3D(xpos, ypos, tpos, 20)
+#' xpos <- c(230, 232)
+#' ypos <- c(40, 42)
+#' tpos <- c('2006-05-05', '2006-05-06')
+#' extract <- xtracto_3D(xpos, ypos, tpos, 150)
 #' \donttest{
-#' extract <- xtracto_3D(xpos, ypos, tpos, 20, verbose=TRUE)
-#' extract <- xtracto_3D(xpos, ypos, tpos, 'phssta8day')
+#' extract <- xtracto_3D(xpos, ypos, tpos, 150, verbose=TRUE)
+#' extract <- xtracto_3D(xpos, ypos, tpos, 'erdMBsstd8day')
 #' }
 
 xtracto_3D <- function(xpos, ypos, tpos, dtype, verbose=FALSE) {
 
   # default URL for NMFS/SWFSC/ERD  ERDDAP server
-  urlbase <- 'http://coastwatch.pfeg.noaa.gov/erddap/griddap/'
-  urlbase1 <- 'http://coastwatch.pfeg.noaa.gov/erddap/tabledap/allDatasets.csv?'
+  urlbase <- 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/'
+  urlbase1 <- 'https://coastwatch.pfeg.noaa.gov/erddap/tabledap/allDatasets.csv?'
   structLength <- nrow(erddapStruct)
 
   if ((length(xpos) != 2) | (length(ypos) != 2)  |  (length(tpos) != 2)) {

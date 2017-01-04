@@ -12,7 +12,7 @@
 #'  @param urlbase - A character string giving the base URL of the ERDDAP server
 #'  @return Named Data array with data, or else NaN
 
-getETOPO <- function(dataStruct, xpos1, ypos, verbose, urlbase='http://coastwatch.pfeg.noaa.gov/erddap/griddap/') {
+getETOPO <- function(dataStruct, xpos1, ypos, verbose, urlbase='https://coastwatch.pfeg.noaa.gov/erddap/griddap/') {
 
 returnCode <- 0
 xlim1 <- min(xpos1)
@@ -72,7 +72,11 @@ if (returnCode == 0) {
   }
 }
 #clean things up
-file.remove(fileout, showWarnings = FALSE)
+myDir <- getwd()
+myFile <- paste0(myDir, '/', fileout)
+  if (file.exists(myFile)) {
+    file.remove(myFile)
+  }
 
 if(returnCode == -1){
   out.array <- NaN

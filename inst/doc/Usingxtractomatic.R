@@ -5,6 +5,7 @@ library(xtractomatic)
 ## ----install,eval=FALSE--------------------------------------------------
 #  install.packages("httr", dependencies = TRUE)
 #  install.packages("ncdf4",dependencies = TRUE)
+#  install.packages("readr", dependencies = TRUE)
 #  install.packages("sp", dependencies = TRUE)
 
 ## ----installCRAN,eval=FALSE----------------------------------------------
@@ -22,7 +23,6 @@ library(xtractomatic)
 #  library("ggplot2")
 #  library("lubridate")
 #  library("mapdata")
-#  library("RColorBrewer")
 #  library("reshape2")
 
 ## ----MarlinTag-----------------------------------------------------------
@@ -39,7 +39,7 @@ str(Marlintag38606)
 #  xpos <- tagData$lon
 #  ypos <- tagData$lat
 #  tpos <- tagData$date
-#  swchl <- xtracto(xpos, ypos, tpos, "swchla8day", xlen = .2, ylen = .2)
+#  swchl <- xtracto("swchla8day", xpos, ypos, tpos = tpos, , xlen = .2, ylen = .2)
 
 ## ----getMarlinChl1, echo = FALSE, warning = FALSE------------------------
 require(xtractomatic)
@@ -57,7 +57,7 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     swchl <- try(xtracto(xpos, ypos, tpos, "swchla8day", xlen = .2, ylen = .2))
+     swchl <- try(xtracto("swchla8day", xpos, ypos, tpos = tpos,  xlen = .2, ylen = .2))
      if (!class(swchl) == "try-error") {
        goodtry <- 1
      }
@@ -66,54 +66,57 @@ while ((tryn <= numtries) & (goodtry == -1)) {
 ## ----swchlStr------------------------------------------------------------
 str(swchl)
 
-## ----meantrackPlot, fig.align='center',fig.width=6,fig.height = 4--------
+## ----meantrackPlot, fig.align = 'center', fig.width = 6, fig.height = 4----
 require(ggplot2)
 require(mapdata)
 # First combine the two dataframes (the input and the output) into one, 
 # so it will be easy to take into account the locations that didn’t 
 # retrieve a value.
 
-alldata <- cbind(tagData, swchl)
+alldata <- cbind(swchl, tagData)
 
 # adjust the longitudes to be (-180,180)
 alldata$lon <- alldata$lon - 360
 # Create a variable that shows if chla is missing
 alldata$missing <- is.na(alldata$mean) * 1
+colnames(alldata)[1] <- 'mean'
 # set limits of the map
 ylim <- c(15, 30)
 xlim <- c(-160, -105)
 # get outline data for map
 w <- map_data("worldHires", ylim = ylim, xlim = xlim)
 # plot using ggplot
-z <- ggplot(alldata, aes(x = lon, y = lat)) + 
-   geom_point(aes(colour = mean,shape = factor(missing)), size = 2.) + 
-  scale_shape_manual(values = c(19, 1))
+myColor <- colors$algae
+z <- ggplot(alldata,aes(x = lon, y = lat)) + 
+   geom_point(aes(colour = mean, shape = factor(missing)), size = 2.) + 
+   scale_shape_manual(values = c(19, 1))
 z + geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") + 
   theme_bw() + 
-  scale_colour_gradient(limits = c(0., 0.32), "Chla") + 
+  scale_colour_gradientn(colours = myColor, limits = c(0., 0.32), "Chla") + 
   coord_fixed(1.3, xlim = xlim, ylim = ylim) + ggtitle("Mean chla values at marlin tag locations")
+
 
 ## ----mediantrackPlot, fig.align= 'center', fig.width = 6,fig.height = 4----
 require(ggplot2)
+colnames(alldata)[10] <- 'median'
 # plot using ggplot
+myColor <- colors$algae
 z <- ggplot(alldata,aes(x = lon,y = lat)) + 
    geom_point(aes(colour = median,shape = factor(missing)), size = 2.) + 
   scale_shape_manual(values = c(19, 1))
 z + geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") + 
   theme_bw() + 
-  scale_colour_gradient(limits = c(0., 0.32), "Chla") + 
+  scale_colour_gradientn(colours = myColor, limits = c(0., 0.32), "Chla") + 
   coord_fixed(1.3, xlim = xlim, ylim = ylim) + ggtitle(" Median chla values at marlin tag locations")
 
 ## ----topotag, eval = FALSE-----------------------------------------------
 #  require("xtractomatic")
-#  require("ggplot2")
 #  ylim <- c(15, 30)
 #  xlim <- c(-160, -105)
-#  topo <- xtracto(tagData$lon, tagData$lat, tagData$date, "ETOPO360", .1, .1)
+#  topo <- xtracto("ETOPO180", tagData$lon, tagData$lat, xlen = .1, ylen = .1)
 
 ## ----topotag1, echo = FALSE, warning = FALSE-----------------------------
 require("xtractomatic")
-require("ggplot2")
 ylim <- c(15, 30)
 xlim <- c(-160, -105)
 numtries <- 5
@@ -122,7 +125,7 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     topo <- try(xtracto(tagData$lon, tagData$lat, tagData$date, "ETOPO360", .1, .1))
+     topo <- try(xtracto("ETOPO180", tagData$lon, tagData$lat, xlen = .1, ylen = .1), silent = TRUE)
      if (!class(topo) == "try-error") {
        goodtry <- 1
      }
@@ -131,8 +134,9 @@ while ((tryn <= numtries) & (goodtry == -1)) {
 
 ## ----topotagPlot, fig.align = 'center', fig.width = 6, fig.height = 4, warning = FALSE----
 require("ggplot2")
-alldata <- cbind(tagData, topo)
+alldata <- cbind(topo, tagData)
 alldata$lon <- alldata$lon - 360
+colnames(alldata)[1] <- 'mean'
 z <- ggplot(alldata, aes(x = lon,y = lat)) + 
    geom_point(aes(colour = mean), size = 2.) + 
   scale_shape_manual(values = c(19, 1))
@@ -177,25 +181,21 @@ tpos <- c('1998-01-01', '2014-11-30')
 
 ## ----SeaWiFS, eval = FALSE-----------------------------------------------
 #  require(xtractomatic)
-#  require(lubridate)
-#  tpos <- c("1998-01-16","last")
-#  SeaWiFS <- xtracto_3D(xpos, ypos, tpos, 'swchlamday')
-#  SeaWiFS$time <- lubridate::as_date(SeaWiFS$time)
+#  tpos <- c("1998-01-16", "last")
+#  SeaWiFS <- xtracto_3D('swchlamday', xpos, ypos, tpos = tpos)
 
 ## ----SeaWiFS1, echo = FALSE, warning = FALSE-----------------------------
 require(xtractomatic)
-require(lubridate)
-tpos <- c("1998-01-16","last")
+tpos <- c("1998-01-16", "last")
 numtries <- 5
 tryn <- 0
 goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     SeaWiFS <- try(xtracto_3D(xpos, ypos, tpos, 'swchlamday'), silent=TRUE)
+     SeaWiFS <- try(xtracto_3D('swchlamday', xpos, ypos, tpos = tpos), silent = TRUE)
      if (!class(SeaWiFS) == "try-error") {
        goodtry <- 1
-       SeaWiFS$time <- lubridate::as_date(SeaWiFS$time)
      }
   }
 
@@ -205,14 +205,11 @@ getInfo('mhchlamday')
 
 ## ----MODISchla, eval = FALSE---------------------------------------------
 #  require(xtractomatic)
-#  require(lubridate)
 #  tpos <- c('2003-01-16', "last")
-#  MODIS <- xtracto_3D(xpos, ypos, tpos, 'mhchlamday')
-#  MODIS$time <- lubridate::as_date(MODIS$time)
+#  MODIS <- xtracto_3D('mhchlamday', xpos, ypos, tpos = tpos)
 
 ## ----MODISchla1, echo = FALSE, warning = FALSE---------------------------
 require(xtractomatic)
-require(lubridate)
 tpos <- c('2003-01-16', "last")
 numtries <- 5
 tryn <- 0
@@ -220,24 +217,20 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     MODIS <- try(xtracto_3D(xpos, ypos, tpos, 'mhchlamday'), silent = TRUE)
+     MODIS <- try(xtracto_3D('mhchlamday', xpos, ypos, tpos = tpos), silent = TRUE)
      if (!class(MODIS) == "try-error") {
        goodtry <- 1
-       MODIS$time <- lubridate::as_date(MODIS$time)
      }
   }
 
 
 ## ----VIIRSchla, eval = FALSE---------------------------------------------
 #  require(xtractomatic)
-#  require(lubridate)
 #  tpos <- c("2012-01-15", "last")
-#  VIIRS <- xtracto_3D(xpos, ypos, tpos, 'erdVH3chlamday')
-#  VIIRS$time <- lubridate::as_date(VIIRS$time)
+#  VIIRS <- xtracto_3D('erdVH3chlamday', xpos, ypos, tpos = tpos)
 
 ## ----VIIRSchla1, echo = FALSE, warning = FALSE---------------------------
 require(xtractomatic)
-require(lubridate)
 tpos <- c("2012-01-15", "last")
 numtries <- 5
 tryn <- 0
@@ -245,10 +238,9 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     VIIRS <- try(xtracto_3D(xpos, ypos, tpos, 'erdVH3chlamday'), silent = TRUE)
+     VIIRS <- try(xtracto_3D('erdVH3chlamday', xpos, ypos, tpos = tpos), silent = TRUE)
      if (!class(VIIRS) == "try-error") {
        goodtry <- 1
-       VIIRS$time <- lubridate::as_date(VIIRS$time)
      }
   }
 
@@ -267,7 +259,6 @@ mapFrame <- function(longitude, latitude, chla){
 plotFrame <- function(chlaFrame, xlim, ylim, title, logplot = TRUE){
   require(mapdata)
   require(ggplot2)
-  require(RColorBrewer)
   w <- map_data("worldHires", ylim = ylim, xlim = xlim)
   myplot <- ggplot(data = chlaFrame, aes(x = x, y = y, fill = chla)) +
     geom_raster(interpolate = FALSE, na.rm = TRUE) +
@@ -275,11 +266,11 @@ plotFrame <- function(chlaFrame, xlim, ylim, title, logplot = TRUE){
     theme_bw() + ylab("latitude") + xlab("longitude") +
     coord_fixed(1.3, xlim = xlim, ylim = ylim)
   if (logplot) {
-     my.col <- colorRampPalette(rev(brewer.pal(11, "RdBu")))(5.5)  
+     my.col <- colors$algae
     myplot <- myplot + scale_fill_gradientn(colours = my.col, na.value = NA, limits = c(-2, 4.5)) +
       ggtitle(title)
     }else{
-     my.col <- colorRampPalette(rev(brewer.pal(11, "RdBu")))((diff(range(chlaFrame$chla, na.rm = TRUE)))) 
+      my.col <- colors$algae
      myplot <- myplot + scale_fill_gradientn(colours = my.col, na.value = NA) +
        ggtitle(title)
   }
@@ -312,6 +303,7 @@ chlalogFrame <- mapFrame(MODIS$longitude, MODIS$latitude,
 chlalogPlot <- plotFrame(chlalogFrame, xlim, ylim, paste("MODIS log(chla)", ttext))
 chlalogPlot
 
+
 ## ----SeaWiFSLogPlot, fig.width = 5, fig.height = 5, fig.align = 'center'----
 xlim <- c(235, 240) - 360
 ylim <- c(36, 39)
@@ -341,7 +333,7 @@ chlaAvg <- function(longitude, latitude, chlaData, xlim, ylim, sTimes){
   yIndex[2] <- which.min(abs(latitude - ylim[2]))
   xIndex[1] <- which.min(abs(longitude - xlim[1]))
   xIndex[2] <- which.min(abs(longitude - xlim[2]))
-  tempData <- chlaData[xIndex[1]:xIndex[2],yIndex[1]:yIndex[2],]
+  tempData <- chlaData[xIndex[1]:xIndex[2], yIndex[1]:yIndex[2],]
   chlaAvg <- apply(tempData, 3, mean, na.rm = TRUE)
   chlaAvg <- data.frame(chla = chlaAvg, time = sTimes)
 return(chlaAvg)
@@ -349,7 +341,6 @@ return(chlaAvg)
 
 
 ## ----AverageChla---------------------------------------------------------
-require(ggplot2)
 xlim1 <- c(-123.5, -123) + 360
 ylim1 <- c(38, 38.5)
 # Get both the average, and the average of log transformed chl for each point in the time series 
@@ -365,7 +356,7 @@ VIIRSlog <- chlaAvg(VIIRS$longitude, VIIRS$latitude, log(VIIRS$data), xlim1, yli
 ## ----plotChlaTS, fig.width = 8, fig.height = 4, fig.align = 'center'-----
 require(ggplot2)
 Chla <- rbind(VIIRSavg, MODISavg, SeaWiFSavg)
-Chla$sat <- c(rep("VIIRS",nrow(VIIRSavg)), rep("MODIS",nrow(MODISavg)), rep("SeaWIF", nrow(SeaWiFSavg)))
+Chla$sat <- c(rep("VIIRS", nrow(VIIRSavg)), rep("MODIS", nrow(MODISavg)), rep("SeaWIF", nrow(SeaWiFSavg)))
 Chla$sat <- as.factor(Chla$sat)
 ggplot(data = Chla, aes(time, chla, colour = sat)) + geom_line(na.rm = TRUE) + theme_bw()
 
@@ -373,7 +364,7 @@ ggplot(data = Chla, aes(time, chla, colour = sat)) + geom_line(na.rm = TRUE) + t
 ## ----plotlogChlaTS, fig.width = 8, fig.height = 4, fig.align = 'center'----
 require(ggplot2)
 logChla <- rbind(VIIRSlog, MODISlog, SeaWiFSlog)
-logChla$sat <- c(rep("VIIRS",nrow(VIIRSlog)), rep("MODIS",nrow(MODISlog)), rep("SeaWIF", nrow(SeaWiFSlog)))
+logChla$sat <- c(rep("VIIRS", nrow(VIIRSlog)), rep("MODIS", nrow(MODISlog)), rep("SeaWIF",    nrow(SeaWiFSlog)))
 logChla$sat <- as.factor(Chla$sat)
 ggplot(data = logChla, aes(time, chla, colour = sat)) + geom_line(na.rm = TRUE)  + theme_bw()
 
@@ -384,7 +375,7 @@ upwell <- function(ektrx, ektry, coast_angle){
    alpha <- (360 - coast_angle) * degtorad
    s1 <- cos(alpha)
    t1 <- sin(alpha)
-   s2 <- -1*t1
+   s2 <- -1 * t1
    t2 <- s1
    perp <- s1 * ektrx + t1 * ektry
    para <- s2 * ektrx + t2 * ektry
@@ -403,8 +394,8 @@ ggplot(temp, aes(time, upwelling)) + geom_line(na.rm = TRUE) + theme_bw()
 #  xpos <- c(238, 238)
 #  ypos <- c(37, 37)
 #  tpos <- c("2005-01-01", "2005-12-31")
-#  ektrx <- xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektrx")
-#  ektry <- xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektry")
+#  ektrx <- xtracto_3D("erdlasFnTran6ektrx", xpos, ypos, tpos = tpos)
+#  ektry <- xtracto_3D("erdlasFnTran6ektry", xpos, ypos, tpos = tpos)
 #  upwelling <- upwell(ektrx$data, ektry$data, 152)
 
 ## ----getUpw1, echo = FALSE, warning = FALSE------------------------------
@@ -418,8 +409,8 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     ektrx <- try(xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektrx"), silent = TRUE)
-     ektry <- try(xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektry"), silent = TRUE)
+     ektrx <- try(xtracto_3D("erdlasFnTran6ektrx", xpos, ypos, tpos = tpos), silent = TRUE)
+     ektry <- try(xtracto_3D("erdlasFnTran6ektry", xpos, ypos, tpos = tpos), silent = TRUE)
      if ((!class(ektrx) == "try-error") & (!class(ektry) == "try-error")) {
        goodtry <- 1
        upwelling <- upwell(ektrx$data, ektry$data, 152)
@@ -438,8 +429,8 @@ plotUpwell(tempUpw, as.Date(ektrx$time))
 ## ----plotUpw77, fig.width = 7, fig.height = 4, fig.align = 'center', warning = FALSE----
 require(xtractomatic)
 tpos <- c("1977-01-01", "1977-12-31")
-ektrx77 <- xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektrx")
-ektry77 <- xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektry")
+ektrx77 <- xtracto_3D("erdlasFnTran6ektrx", xpos, ypos, tpos = tpos)
+ektry77 <- xtracto_3D("erdlasFnTran6ektry", xpos, ypos, tpos = tpos)
 upwelling77 <- upwell(ektrx77$data, ektry77$data, 152)
 # remove the one big storm at the end
 tempUpw <- upwelling77
@@ -455,8 +446,8 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     ektrx77 <- try(xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektrx"), silent = TRUE)
-     ektry77 <- try(xtracto_3D(xpos, ypos, tpos, "erdlasFnTran6ektry"), silent = TRUE)
+     ektrx77 <- try(xtracto_3D("erdlasFnTran6ektrx", xpos, ypos, tpos = tpos), silent = TRUE)
+     ektry77 <- try(xtracto_3D("erdlasFnTran6ektry", xpos, ypos, tpos = tpos), silent = TRUE)
      if ((!class(ektrx77) == "try-error") & (!class(ektry77) == "try-error")) {
        goodtry <- 1
        upwelling77 <- upwell(ektrx77$data, ektry77$data, 152)
@@ -479,8 +470,8 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     ascat <- try(xtracto_3D(xpos, ypos, tpos, "erdQAstress3daytauy"), silent = TRUE)
-     quikscat <- try(xtracto_3D(xpos, ypos, tpos, "erdQSstress3daytauy"), silent = TRUE)
+     ascat <- try(xtracto_3D("erdQAstress3daytauy", xpos, ypos, tpos = tpos), silent = TRUE)
+     quikscat <- try(xtracto_3D("erdQSstress3daytauy", xpos, ypos, tpos = tpos), silent = TRUE)
      if ((!class(ascat) == "try-error") & (!class(quikscat) == "try-error")) {
        goodtry <- 1
      }
@@ -492,8 +483,8 @@ while ((tryn <= numtries) & (goodtry == -1)) {
 #  xpos <- c(237, 237)
 #  ypos <- c(36, 36)
 #  tpos <- c("2009-10-04", "2009-11-19")
-#  ascat <- xtracto_3D(xpos, ypos, tpos, "erdQAstress3daytauy")
-#  quikscat <- xtracto_3D(xpos, ypos, tpos, "erdQSstress3daytauy")
+#  ascat <- xtracto_3D("erdQAstress3daytauy", xpos, ypos, tpos = tpos)
+#  quikscat <- xtracto_3D("erdQSstress3daytauy", xpos, ypos, tpos = tpos)
 
 ## ----plotstress, fig.width = 6,  fig.height = 4, fig.align = 'center', warning = FALSE----
 require(ggplot2)
@@ -515,7 +506,7 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     poes <- try(xtracto_3D(xpos, ypos, tpos, "agsstamday"), silent = TRUE)
+     poes <- try(xtracto_3D("agsstamday", xpos, ypos, tpos = tpos), silent = TRUE)
      if (!class(poes) == "try-error") {
        goodtry <- 1
      }
@@ -528,7 +519,7 @@ while ((tryn <= numtries) & (goodtry == -1)) {
 #  xpos <- c(235, 240)
 #  ypos <- c(36, 39)
 #  tpos <- c("last-5", "last")
-#  poes <- xtracto_3D(xpos, ypos, tpos, "agsstamday")
+#  poes <- xtracto_3D("agsstamday", xpos, ypos, tpos = tpos)
 #  
 
 ## ----plotPoes, fig.width = 7.5, fig.height = 4, fig.align = 'center'-----
@@ -547,11 +538,12 @@ latitude <- poes$latitude
 imon <- 1:5
 tmp <- lapply(imon, function(x) melt_sst(longitude, latitude, poes$time[x], poes$data[,,x]))
 allmons <- do.call(rbind, tmp)
+my.col <- colors$thermal
 w <- map_data("worldHires", ylim = ypos, xlim = xpos)
 ggplot(data = allmons, aes(x = long, y = lat, fill = sst)) + 
     geom_polygon(data = w, aes(x = long, y = lat, group = group), fill = "grey80") +
     geom_raster(interpolate = TRUE) +
-    scale_fill_gradientn(colours = rev(rainbow(10)), na.value = NA) +
+    scale_fill_gradientn(colours = my.col, na.value = NA) +
     theme_bw() +
     coord_fixed(1.3,xlim = xpos, ylim = ypos) + 
     facet_wrap(~ date, nrow = 2)
@@ -566,7 +558,7 @@ xpos <- c(238, 243)
 ypos <- c(30, 35)
 for (year in 2009:2014) {
   tpos <- rep(paste(year, '-12-20', sep = ""), 2)
-  tmp <- xtracto_3D(xpos, ypos, tpos, 'jplMURSST41SST')
+  tmp <- xtracto_3D('jplMURSST41SST', xpos, ypos, tpos = tpos)
 #ggplot is sensitve that the grid is absolutely regular
   tmp$latitude <- seq(range(tmp$latitude)[1], range(tmp$latitude)[2], length.out = length(tmp$latitude))
   tmp$longitude <- seq(range(tmp$longitude)[1], range(tmp$longitude)[2], length.out = length(tmp$longitude))  
@@ -584,14 +576,15 @@ xpos <- xpos - 360
 #long<-allyears$longitude-360
 #lat<-allyears$latitude
 coast <- map_data("worldHires", ylim = ypos, xlim = c(-123.5, -120.))
+my.col <- colors$thermal
 
 ggplot(data = allyears, aes(x = long, y = lat, fill = sst)) + 
   geom_polygon(data = coast, aes(x = long, y = lat, group = group), fill = "grey80") +
   geom_raster(interpolate = TRUE) +
-  scale_fill_gradientn(colours = rev(rainbow(10)), na.value = NA) +
+  scale_fill_gradientn(colours = my.col, na.value = NA) +
   theme_bw() +
   coord_fixed(1.3, xlim = xpos, ylim = ypos) + 
-  facet_wrap(~ date, nrow = 2)
+  facet_wrap(~date, nrow = 2)
 
 
 ## ----mbnms---------------------------------------------------------------
@@ -601,10 +594,9 @@ str(mbnms)
 ## ----mbnmsChla, eval = FALSE---------------------------------------------
 #  require(xtractomatic)
 #  tpos <- c("2014-09-01", "2014-10-01")
-#  #tpos <-as.Date(tpos)
 #  xpos <- mbnms$Longitude
 #  ypos <- mbnms$Latitude
-#  sanctchl <- xtractogon(xpos, ypos, tpos, 'erdVH3chlamday')
+#  sanctchl <- xtractogon('erdVH3chlamday', xpos, ypos, tpos = tpos )
 #  str(sanctchl)
 
 ## ----mbnmsChla1, echo = FALSE, warning = FALSE---------------------------
@@ -619,7 +611,7 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     sanctchl <- try(xtractogon(xpos, ypos, tpos, 'erdVH3chlamday'), silent = TRUE)
+     sanctchl <- try(xtractogon('erdVH3chlamday', xpos, ypos, tpos = tpos), silent = TRUE)
      if (!class(sanctchl) == "try-error") {
        goodtry <- 1
        str(sanctchl)
@@ -628,13 +620,12 @@ while ((tryn <= numtries) & (goodtry == -1)) {
 
 
 ## ----mbnmsChlaPlot, fig.width = 5, fig.height = 5, fig.align = 'center'----
-require(RColorBrewer)
 require(ggplot2)
 require(mapdata)
 xlim <- c(-123.5, -121.)
 ylim <- c(35, 38)
 mbnmsFrame <- mapFrame(sanctchl$longitude + 360, sanctchl$latitude, log(sanctchl$data[, , 2]))
-my.col <- colorRampPalette(rev(brewer.pal(11, "RdBu")))(5.5)  
+my.col <- colors$algae
 w <- map_data("worldHires", ylim = ylim, xlim = xlim)
 myplot <- ggplot() + geom_path(data = mbnms, aes(x = Longitude, y = Latitude), colour = "black")   
 myplot <- myplot + 
@@ -652,7 +643,7 @@ myplot
 #  #tpos <-as.Date(tpos)
 #  xpos <- mbnms$Longitude
 #  ypos <- mbnms$Latitude
-#  bathy <- xtractogon(xpos, ypos, tpos, 'ETOPO180')
+#  bathy <- xtractogon('ETOPO180', xpos, ypos)
 #  str(bathy)
 
 ## ----mbnmsBathy1, echo = FALSE, warning = FALSE, error = TRUE------------
@@ -666,7 +657,7 @@ goodtry <- -1
 options(warn = 2)
 while ((tryn <= numtries) & (goodtry == -1)) {
      tryn <- tryn + 1
-     bathy <- try(xtractogon(xpos, ypos, tpos, 'ETOPO180'), silent = TRUE)
+     bathy <- try(xtractogon('ETOPO180', xpos, ypos), silent = TRUE)
      if (!class(bathy) == "try-error") {
        goodtry <- 1
        str(bathy)
@@ -676,7 +667,6 @@ while ((tryn <= numtries) & (goodtry == -1)) {
 
 ## ----mbnmsBathyPlot, fig.width = 5, fig.height = 5, fig.align = 'center'----
 require(ggplot2)
-require(RColorBrewer)
 require(mapdata)
 xlim <- c(-123.5, -121.)
 ylim <- c(35, 38)

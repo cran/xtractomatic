@@ -1,5 +1,5 @@
 Package: xtractomatic
-Version: 3.4.0
+Version: 3.4.1
 Title: Accessing Environmental Data from ERD's ERDDAP Server
 Authors@R: c(
     person("Roy", "Mendelssohn", email = "roy.mendelssohn@noaa.gov", role = c("aut","cre")),
@@ -22,10 +22,10 @@ Suggests: DT, ggplot2, knitr, lubridate, mapdata, reshape2, rmarkdown,
 VignetteBuilder: knitr
 RoxygenNote: 6.0.1
 NeedsCompilation: no
-Packaged: 2018-01-09 19:39:38 UTC; rmendels
+Packaged: 2018-01-23 17:12:42 UTC; rmendels
 Author: Roy Mendelssohn [aut, cre],
   Cindy Bessey [ctb],
   Dave Foley [ctb]
 Maintainer: Roy Mendelssohn <roy.mendelssohn@noaa.gov>
 Repository: CRAN
-Date/Publication: 2018-01-09 19:55:22 UTC
+Date/Publication: 2018-01-23 18:06:59 UTC
